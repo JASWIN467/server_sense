@@ -9,7 +9,8 @@ import {
     LogoutOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined,
-    BellOutlined
+    BellOutlined,
+    AreaChartOutlined,
 } from '@ant-design/icons';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -34,6 +35,11 @@ const AdminLayout = () => {
             label: 'Servers',
         },
         {
+            key: '/admin/metrics',
+            icon: <AreaChartOutlined />,
+            label: 'Metrics',
+        },
+        {
             key: '/admin/alerts',
             icon: <AlertOutlined />,
             label: 'Alerts',
@@ -54,7 +60,7 @@ const AdminLayout = () => {
         if (key === 'logout') {
             // Mock logout
             localStorage.removeItem('token');
-            window.location.href = '/login';
+            navigate('/login');
         } else if (key) {
             navigate(key);
         }

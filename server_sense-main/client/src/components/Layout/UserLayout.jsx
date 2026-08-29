@@ -10,7 +10,7 @@ import {
     MenuUnfoldOutlined,
     BellOutlined
 } from '@ant-design/icons';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const { Header, Sider, Content } = Layout;
@@ -18,6 +18,7 @@ const { Header, Sider, Content } = Layout;
 const UserLayout = () => {
     const [collapsed, setCollapsed] = useState(false);
     const location = useLocation();
+    const navigate = useNavigate();
 
     const menuItems = [
         {
@@ -40,7 +41,7 @@ const UserLayout = () => {
     const handleMenuClick = ({ key }) => {
         if (key === 'logout') {
             localStorage.removeItem('token');
-            window.location.href = '/login';
+            navigate('/login');
         }
     };
 

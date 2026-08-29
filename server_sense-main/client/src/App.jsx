@@ -10,6 +10,7 @@ import ServerList from './pages/Admin/ServerList';
 import Alerts from './pages/Admin/Alerts';
 import Settings from './pages/Admin/Settings';
 import UserList from './pages/Admin/UserList';
+import MetricsDashboard from './pages/Admin/MetricsDashboard';
 
 import UserLayout from './components/Layout/UserLayout';
 import UserDashboard from './pages/User/UserDashboard';
@@ -33,6 +34,7 @@ function App() {
           <Route path="alerts" element={<Alerts />} />
           <Route path="users" element={<UserList />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="metrics" element={<MetricsDashboard />} />
         </Route>
 
         {/* User Routes */}

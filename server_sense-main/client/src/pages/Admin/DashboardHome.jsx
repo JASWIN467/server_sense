@@ -15,8 +15,7 @@ import {
     ApiOutlined,
     SafetyCertificateOutlined,
     NodeIndexOutlined,
-    ArrowRightOutlined,
-    CheckCircleOutlined
+    ArrowRightOutlined
 } from '@ant-design/icons';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 
@@ -251,217 +250,159 @@ const PerformanceTab = ({ data }) => {
     );
 };
 
-// --- TAB 3: CAPACITY PLANNING ---
-const CapacitySnapshot = ({ data, onSimulate, isSimulating, riskResolved }) => (
+// --- TAB 3: INSIGHTS ---
+
+const CapacitySnapshot = () => (
     <GlassPanel className="p-6 h-full">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                 <PieChartOutlined className="text-purple-500" />
-                Capacity Planning
+                Capacity Planning Snapshot
             </h3>
-            <span className="text-xs font-mono text-purple-400 bg-purple-500/10 px-2 py-1 rounded">AI Risk Analysis</span>
+            <span className="text-xs font-mono text-purple-400 bg-purple-500/10 px-2 py-1 rounded">Future Risk Analysis</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            <div className={`rounded-2xl p-6 border transition-all duration-500 ${riskResolved ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
-                <div className="flex items-start justify-between mb-4">
-                    <div>
-                        <p className={`text-xs uppercase font-bold tracking-wider mb-1 ${riskResolved ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {riskResolved ? 'Status: Healthy' : 'Critical Warning'}
-                        </p>
-                        <h4 className="text-white text-xl font-medium">
-                            {riskResolved ? 'Capacity Optimized' : 'Storage Exhaustion Imminent'}
-                        </h4>
-                    </div>
-                    {!riskResolved && <WarningOutlined className="text-2xl text-red-500 animate-pulse" />}
-                    {riskResolved && <SafetyCertificateOutlined className="text-2xl text-emerald-500" />}
+        <div className="space-y-8">
+            {/* Disk Trend Prediction */}
+            <div className="bg-white/5 rounded-xl p-4 border border-white/5 relative overflow-hidden group hover:border-red-500/30 transition-colors">
+                <div className="absolute top-0 right-0 p-2 opacity-50">
+                    <WarningOutlined className="text-red-500 text-xl animate-pulse" />
                 </div>
-
-                <div className="space-y-4">
+                <div className="flex justify-between items-end mb-2">
                     <div>
-                        <div className="flex justify-between text-xs text-gray-400 mb-1">
-                            <span>Predicted Usage (14 Days)</span>
-                            <span className="text-white">{riskResolved ? '65%' : '98%'}</span>
-                        </div>
-                        <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
-                            <div
-                                className={`h-full transition-all duration-1000 ${riskResolved ? 'bg-emerald-500 w-[65%]' : 'bg-red-500 w-[98%]'}`}
-                            />
-                        </div>
+                        <p className="text-gray-400 text-xs uppercase font-bold tracking-wider">Storage forecast</p>
+                        <p className="text-white font-medium mt-1">Disk expected to reach <span className="text-red-400">90%</span> in <span className="text-white font-bold text-lg">12 Days</span></p>
                     </div>
                 </div>
-
-                {!riskResolved && (
-                    <div className="mt-6 bg-[#000]/40 rounded-xl p-4 border border-white/5">
-                        <p className="text-gray-300 text-sm mb-3">
-                            <strong className="text-white">Recommendation:</strong> Add 200GB to volume <code className="bg-white/10 px-1 rounded text-xs">vol-0a3</code>
-                        </p>
-                        <Button
-                            type="primary"
-                            danger
-                            loading={isSimulating}
-                            onClick={onSimulate}
-                            icon={<CloudSyncOutlined />}
-                            className="bg-red-600 border-none w-full"
-                        >
-                            Simulate Auto-Scaling
-                        </Button>
-                    </div>
-                )}
-                {riskResolved && (
-                    <div className="mt-6 flex items-center gap-3 text-emerald-400 text-sm bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/10">
-                        <CheckCircleOutlined /> Recommendation applied. Risk mitigated.
-                    </div>
-                )}
+                <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden mb-2">
+                    <div className="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 w-[78%]" />
+                </div>
+                <p className="text-[11px] text-gray-500 flex items-center gap-2">
+                    <ArrowRightOutlined className="rotate-[-45deg] text-red-500" /> Trend: Accelerating (+1.2GB/day)
+                </p>
             </div>
 
-            <div className="space-y-4">
-                <h4 className="text-gray-400 text-sm font-medium uppercase tracking-widest pl-1">Resource Trends</h4>
-                <div className="space-y-3">
-                    <div className="bg-white/5 rounded-xl p-4 flex items-center justify-between group hover:bg-white/10 transition-colors">
-                        <div className="flex items-center gap-4">
-                            <div className="p-2 rounded-lg bg-sky-500/10 text-sky-500"><DesktopOutlined /></div>
-                            <div>
-                                <p className="text-white font-medium">CPU Load</p>
-                                <p className="text-xs text-gray-500">Global Average</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-white font-mono">{data.cpuTrend}%</p>
-                            <span className="text-[10px] text-amber-400 flex items-center justify-end gap-1"><RiseOutlined /> +2.4%</span>
-                        </div>
+            {/* Other Trends */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                    <p className="text-gray-400 text-xs uppercase font-bold tracking-wider mb-2">CPU Trend</p>
+                    <div className="flex items-center gap-2">
+                        <ArrowRightOutlined className="rotate-[-15deg] text-amber-500" />
+                        <span className="text-amber-400 font-medium">Increasing Slowly</span>
                     </div>
-                    <div className="bg-white/5 rounded-xl p-4 flex items-center justify-between group hover:bg-white/10 transition-colors">
-                        <div className="flex items-center gap-4">
-                            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500"><DatabaseOutlined /></div>
-                            <div>
-                                <p className="text-white font-medium">Memory</p>
-                                <p className="text-xs text-gray-500">Utilization</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-white font-mono">{data.memTrend}%</p>
-                            <span className="text-[10px] text-emerald-400 flex items-center justify-end gap-1"><ArrowRightOutlined /> Stable</span>
-                        </div>
+                    <p className="text-[10px] text-gray-600 mt-1">Week-over-week +5%</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                    <p className="text-gray-400 text-xs uppercase font-bold tracking-wider mb-2">RAM Usage</p>
+                    <div className="flex items-center gap-2">
+                        <ArrowRightOutlined className="text-emerald-500" />
+                        <span className="text-emerald-400 font-medium">Stable</span>
                     </div>
+                    <p className="text-[10px] text-gray-600 mt-1">Avg 65% utilization</p>
+                </div>
+            </div>
+
+            {/* Recommendation */}
+            <div className="bg-sky-500/10 border border-sky-500/20 rounded-xl p-4 flex gap-3">
+                <div className="mt-1"><SafetyCertificateOutlined className="text-sky-400 text-lg" /></div>
+                <div>
+                    <h4 className="text-sky-100 font-medium text-sm">AI Recommendation</h4>
+                    <p className="text-sky-300/80 text-xs mt-1 leading-relaxed">
+                        Scale storage volume <strong>vol-0a3</strong> by 200GB before Dec 14 to avoid outage.
+                    </p>
+                    <button className="mt-3 text-[10px] bg-sky-500 hover:bg-sky-400 text-white px-3 py-1.5 rounded transition-colors font-medium">
+                        Simulate Scaling
+                    </button>
                 </div>
             </div>
         </div>
     </GlassPanel>
 );
 
-// --- TAB 4: SERVICE MAP (SVG) ---
-const ServiceMap = ({ stats }) => {
-    // Determine dynamic colors based on latency stats
-    const apiHealth = parseInt(stats.latency) > 50 ? '#f59e0b' : '#10b981';
-    // const dbHealth = '#10b981'; // Unused
+const ServiceDependencyMap = () => (
+    <GlassPanel className="p-6 h-full">
+        <div className="flex items-center justify-between mb-8">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <NodeIndexOutlined className="text-emerald-500" />
+                Service Dependency Map
+            </h3>
+            <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">Live Topology</span>
+        </div>
 
-    return (
-        <GlassPanel className="p-0 h-[600px] relative overflow-hidden bg-[#050505]">
-            {/* Header Overlay */}
-            <div className="absolute top-6 left-6 z-10">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <NodeIndexOutlined className="text-emerald-500" /> Service Map
-                </h3>
-                <p className="text-gray-500 text-xs mt-1">Live architecture topology & health</p>
-            </div>
+        {/* Map Visualization */}
+        <div className="relative flex items-center justify-center p-4 min-h-[300px]">
+            {/* Connecting Lines (Simulated with absolute positioning or simplified flex row) */}
+            <div className="flex items-center gap-4 w-full justify-center">
 
-            {/* SVG Layer for Connections */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                <defs>
-                    <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#334155" stopOpacity="0.2" />
-                        <stop offset="50%" stopColor="#10b981" />
-                        <stop offset="100%" stopColor="#334155" stopOpacity="0.2" />
-                    </linearGradient>
-                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="#334155" />
-                    </marker>
-                </defs>
-
-                {/* Connection: Client -> API GW */}
-                <path d="M 200 300 C 300 300, 300 300, 400 300" fill="none" stroke="#334155" strokeWidth="2" markerEnd="url(#arrowhead)" />
-                <circle r="3" fill="#10b981">
-                    <animateMotion dur="2s" repeatCount="indefinite" path="M 200 300 C 300 300, 300 300, 400 300" />
-                </circle>
-
-                {/* Connection: API GW -> Auth */}
-                <path d="M 480 300 C 550 300, 550 150, 650 150" fill="none" stroke="#334155" strokeWidth="2" />
-                <circle r="3" fill="#10b981">
-                    <animateMotion dur="3s" repeatCount="indefinite" path="M 480 300 C 550 300, 550 150, 650 150" />
-                </circle>
-
-                {/* Connection: API GW -> DB */}
-                <path d="M 480 300 C 550 300, 550 450, 650 450" fill="none" stroke="#334155" strokeWidth="2" />
-                <circle r="3" fill="#3b82f6">
-                    <animateMotion dur="2.5s" repeatCount="indefinite" path="M 480 300 C 550 300, 550 450, 650 450" />
-                </circle>
-
-                {/* Connection: DB -> Cache */}
-                <path d="M 750 450 C 800 450, 800 450, 850 450" fill="none" stroke="#334155" strokeWidth="2" strokeDasharray="5,5" />
-            </svg>
-
-            {/* Nodes Layer (Absolute Positioning) */}
-            <div className="absolute inset-0 w-full h-full">
-
-                {/* 1. Client Node */}
-                <div className="absolute left-[120px] top-[260px] w-20 flex flex-col items-center gap-3">
-                    <div className="w-16 h-16 rounded-full bg-[#111] border border-gray-700 shadow-[0_0_20px_rgba(255,255,255,0.05)] flex items-center justify-center z-10 hover:scale-110 transition-transform cursor-pointer">
-                        <DesktopOutlined className="text-2xl text-gray-400" />
+                {/* Nodes */}
+                <div className="flex flex-col items-center gap-2">
+                    <div className="w-16 h-16 rounded-full bg-[#111] border-2 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)] flex items-center justify-center z-10">
+                        <DesktopOutlined className="text-xl text-emerald-500" />
                     </div>
-                    <div className="text-center">
-                        <p className="text-gray-300 text-xs font-bold">Client</p>
-                        <p className="text-gray-600 text-[10px]">Web / Mobile</p>
-                    </div>
+                    <span className="text-xs text-gray-400 font-mono">Client</span>
                 </div>
 
-                {/* 2. API Gateway Node */}
-                <div className="absolute left-[400px] top-[250px] w-24 flex flex-col items-center gap-3">
-                    <div className="w-20 h-20 rounded-xl bg-[#0f172a] border-2 shadow-[0_0_30px_rgba(16,185,129,0.2)] flex flex-col items-center justify-center z-10 relative hover:scale-110 transition-transform cursor-pointer" style={{ borderColor: apiHealth }}>
-                        <GatewayOutlined className="text-3xl mb-1" style={{ color: apiHealth }} />
+                <div className="h-[2px] w-12 bg-emerald-500/30" />
+
+                <div className="flex flex-col items-center gap-2">
+                    <div className="w-20 h-20 rounded-xl bg-[#111] border-2 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.3)] flex flex-col items-center justify-center z-10 relative">
+                        <ApiOutlined className="text-2xl text-emerald-500 mb-1" />
                         <span className="text-[10px] font-bold text-white">API GW</span>
-                        {/* Status Dot */}
-                        <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full animate-ping" style={{ backgroundColor: apiHealth }} />
-                    </div>
-                    <div className="bg-white/5 px-2 py-1 rounded text-[10px] text-gray-400 font-mono">
-                        {stats.latency}
+                        {/* Traffic Dots */}
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-ping" />
                     </div>
                 </div>
 
-                {/* 3. Auth Service Node */}
-                <div className="absolute left-[650px] top-[110px] w-24 flex flex-col items-center gap-3">
-                    <div className="w-20 h-20 rounded-xl bg-[#0f172a] border border-gray-700 hover:border-emerald-500 transition-colors flex flex-col items-center justify-center z-10 hover:scale-110">
-                        <SafetyCertificateOutlined className="text-2xl text-emerald-400 mb-1" />
-                        <span className="text-[10px] text-gray-300">Auth</span>
+                <div className="h-[2px] w-12 bg-emerald-500/30" />
+
+                {/* Branching */}
+                <div className="flex flex-col gap-8">
+                    {/* Auth Service */}
+                    <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-lg bg-[#111] border border-emerald-500/50 flex flex-col items-center justify-center">
+                            <SafetyCertificateOutlined className="text-lg text-emerald-400 mb-1" />
+                            <span className="text-[10px] text-gray-300">Auth</span>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <span className="text-[9px] bg-green-900/30 text-green-400 px-1.5 py-0.5 rounded">Healthy</span>
+                    {/* Database */}
+                    <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-lg bg-[#111] border border-emerald-500/50 flex flex-col items-center justify-center">
+                            <DatabaseOutlined className="text-lg text-blue-400 mb-1" />
+                            <span className="text-[10px] text-gray-300">Main DB</span>
+                        </div>
+                        <div className="h-[2px] w-8 bg-dashed bg-gray-700" />
+                        <div className="w-14 h-14 rounded-lg bg-[#111] border border-gray-700 flex flex-col items-center justify-center opacity-75">
+                            <CloudSyncOutlined className="text-lg text-amber-500 mb-1" />
+                            <span className="text-[9px] text-gray-500">Cache</span>
+                        </div>
                     </div>
                 </div>
-
-                {/* 4. Database Node */}
-                <div className="absolute left-[650px] top-[410px] w-24 flex flex-col items-center gap-3">
-                    <div className="w-20 h-20 rounded-xl bg-[#0f172a] border border-gray-700 hover:border-blue-500 transition-colors flex flex-col items-center justify-center z-10 hover:scale-110">
-                        <DatabaseOutlined className="text-2xl text-blue-400 mb-1" />
-                        <span className="text-[10px] text-gray-300">Primary DB</span>
-                    </div>
-                    <div className="bg-white/5 px-2 py-1 rounded text-[10px] text-gray-400 font-mono">
-                        {stats.activeSessions} Conn
-                    </div>
-                </div>
-
-                {/* 5. Cache Node */}
-                <div className="absolute left-[850px] top-[425px] w-16 flex flex-col items-center gap-2">
-                    <div className="w-12 h-12 rounded-lg bg-[#0f172a] border border-dashed border-gray-600 flex flex-col items-center justify-center z-10 opacity-80">
-                        <CloudSyncOutlined className="text-lg text-amber-500" />
-                    </div>
-                    <span className="text-[10px] text-gray-500">Redis</span>
-                </div>
-
             </div>
-        </GlassPanel>
-    );
-};
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2 text-[10px] text-gray-500 text-center">
+            <div className="bg-emerald-500/5 p-2 rounded border border-emerald-500/10">
+                <span className="block text-emerald-500 font-bold text-lg">99.9%</span>
+                Uptime
+            </div>
+            <div className="bg-blue-500/5 p-2 rounded border border-blue-500/10">
+                <span className="block text-blue-400 font-bold text-lg">45ms</span>
+                Avg Latency
+            </div>
+            <div className="bg-amber-500/5 p-2 rounded border border-amber-500/10">
+                <span className="block text-amber-400 font-bold text-lg">0.01%</span>
+                Error Rate
+            </div>
+        </div>
+    </GlassPanel>
+);
+
+const InsightsTab = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+        <CapacitySnapshot />
+        <ServiceDependencyMap />
+    </div>
+);
 
 // --- DATA GENERATION ---
 const generateData = (count = 20) => {
@@ -485,11 +426,6 @@ const DashboardHome = () => {
         errorRate: '0.01%'
     });
 
-    // Insights State
-    const [capacityData, setCapacityData] = useState({ cpuTrend: 5, memTrend: 65 });
-    const [isSimulating, setIsSimulating] = useState(false);
-    const [riskResolved, setRiskResolved] = useState(false);
-
     useEffect(() => {
         const interval = setInterval(() => {
             // Update Chart Data
@@ -509,28 +445,12 @@ const DashboardHome = () => {
                 healthScore: Math.min(100, Math.max(90, prev.healthScore + (Math.random() > 0.5 ? 1 : -1))),
                 apiReq: (parseFloat(prev.apiReq) + Math.random() * 0.01).toFixed(2) + 'M',
                 activeSessions: Math.floor(parseInt(prev.activeSessions) + (Math.random() - 0.5) * 10).toString(),
-                latency: Math.floor(20 + Math.random() * 40) + 'ms', // Fluctuate more for visual effect in map
+                latency: Math.floor(20 + Math.random() * 15) + 'ms',
                 errorRate: (0.01 + Math.random() * 0.02).toFixed(3) + '%'
             }));
-
-            // Update Capacity Randomly
-            setCapacityData(prev => ({
-                cpuTrend: Math.max(2, Math.min(15, prev.cpuTrend + (Math.random() - 0.5))),
-                memTrend: Math.max(40, Math.min(80, prev.memTrend + (Math.random() - 0.5) * 2))
-            }));
-
         }, 2000);
         return () => clearInterval(interval);
     }, []);
-
-    const handleSimulateScale = () => {
-        setIsSimulating(true);
-        setTimeout(() => {
-            setRiskResolved(true);
-            setIsSimulating(false);
-            message.success('Auto-scaling configuration applied successfully!');
-        }, 2000); // 2-second simulation
-    };
 
     const tabItems = [
         {
@@ -545,18 +465,8 @@ const DashboardHome = () => {
         },
         {
             key: '3',
-            label: <span className="flex items-center gap-2 px-2 py-1"><PieChartOutlined /> Capacity</span>,
-            children: <CapacitySnapshot
-                data={capacityData}
-                onSimulate={handleSimulateScale}
-                isSimulating={isSimulating}
-                riskResolved={riskResolved}
-            />
-        },
-        {
-            key: '4',
-            label: <span className="flex items-center gap-2 px-2 py-1"><NodeIndexOutlined /> Service Map</span>,
-            children: <ServiceMap stats={stats} />
+            label: <span className="flex items-center gap-2 px-2 py-1"><NodeIndexOutlined /> Insights</span>,
+            children: <InsightsTab />
         }
     ];
 

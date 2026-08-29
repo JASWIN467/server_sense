@@ -1,11 +1,10 @@
 import { message } from 'antd';
-
-const API_URL = 'https://serversense-server.onrender.com/api/auth';
+import { API_ENDPOINTS } from '../config/constants';
 
 export const authService = {
     register: async (userData) => {
         try {
-            const response = await fetch(`${API_URL}/register`, {
+            const response = await fetch(API_ENDPOINTS.AUTH.REGISTER, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -27,7 +26,7 @@ export const authService = {
 
     login: async (credentials) => {
         try {
-            const response = await fetch(`${API_URL}/login`, {
+            const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

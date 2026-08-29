@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "start": "nodemon index.js",
-    "seed": "node seedData.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -27,6 +26,7 @@
     "mongodb": "^7.0.0",
     "mongoose": "^9.0.1",
     "nodemon": "^3.1.11",
-    "styled-components": "^6.1.19"
+    "styled-components": "^6.1.19",
+    "systeminformation": "^5.23.5"
   }
 }

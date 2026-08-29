@@ -9,7 +9,8 @@ import {
     LogoutOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined,
-    BellOutlined
+    BellOutlined,
+    AreaChartOutlined,
 } from '@ant-design/icons';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -32,6 +33,11 @@ const AdminLayout = () => {
             key: '/admin/servers',
             icon: <CloudServerOutlined />,
             label: 'Servers',
+        },
+        {
+            key: '/admin/metrics',
+            icon: <AreaChartOutlined />,
+            label: 'Metrics',
         },
         {
             key: '/admin/alerts',

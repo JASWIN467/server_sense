@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Checkbox, message } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, GoogleOutlined, GithubOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, MailOutlined, GoogleOutlined, GithubOutlined, SafetyCertificateOutlined, TeamOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import Threads from '../../pages/Threads/Threads';
@@ -8,19 +8,19 @@ import { authService } from '../../services/authService';
 
 const RegisterPage = () => {
     const navigate = useNavigate();
+    const [role, setRole] = useState('user'); // 'user' | 'admin'
     const [loading, setLoading] = useState(false);
 
     const onFinish = async (values) => {
         setLoading(true);
         try {
-            // Note: Email is not yet in backend User model, but we can send it or ignore it for now.
-            // Sending username and password as per current backend.
             await authService.register({
                 username: values.username,
                 password: values.password,
-                email: values.email
+                email: values.email,
+                role: role
             });
-            message.success('Registration successful! Please login.');
+            message.success(`Registration successful as ${role}! Please login.`);
             navigate('/login');
         } catch (error) {
             message.error(error.message || 'Registration failed');
@@ -34,7 +34,7 @@ const RegisterPage = () => {
             {/* Threads Background (Dimmed) */}
             <div className="absolute inset-0 z-0 opacity-40">
                 <Threads
-                    color={[0.23, 0.51, 0.96]} // Neon Blueish
+                    color={role === 'admin' ? [0.23, 0.51, 0.96] : [0.85, 0.27, 0.94]}
                     amplitude={1.5}
                     distance={0}
                     enableMouseInteraction={true}
@@ -52,9 +52,34 @@ const RegisterPage = () => {
                     transition={{ duration: 0.6, ease: "easeOut" }}
                     className="bg-surface/60 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl shadow-black/50"
                 >
-                    <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Create Account</h1>
-                        <p className="text-gray-400">Join ServerSense today</p>
+                    {/* Role Selector */}
+                    <div className="flex bg-white/5 p-1 rounded-xl mb-6 relative">
+                        <div
+                            className={`absolute inset-y-1 w-[calc(50%-4px)] rounded-lg transition-all duration-300 ease-in-out ${role === 'admin' ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'}`}
+                            style={{ backgroundColor: role === 'admin' ? '#0ea5e9' : '#d946ef' }}
+                        />
+
+                        <button
+                            type="button"
+                            onClick={() => setRole('user')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold relative z-10 transition-colors duration-300 ${role === 'user' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <TeamOutlined className="text-base" />
+                            User
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setRole('admin')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold relative z-10 transition-colors duration-300 ${role === 'admin' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <SafetyCertificateOutlined className="text-base" />
+                            Admin
+                        </button>
+                    </div>
+
+                    <div className="text-center mb-6">
+                        <h1 className="text-3xl font-bold text-white mb-1 tracking-tight">Create Account</h1>
+                        <p className="text-gray-400 text-sm">Join ServerSense as {role === 'admin' ? 'an Administrator' : 'a Standard User'}</p>
                     </div>
 
                     <Form

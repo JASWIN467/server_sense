@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL = 'https://serversense-server.onrender.com';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -16,8 +16,9 @@ export const API_ENDPOINTS = {
     DELETE: (id) => `${API_BASE_URL}/api/servers/${id}`,
   },
   METRICS: {
-    DASHBOARD: `${API_BASE_URL}/api/metrics/dashboard`,
-    SERVER: (id) => `${API_BASE_URL}/api/metrics/server/${id}`,
+    CURRENT: `${API_BASE_URL}/api/metrics/current`,
+    HISTORY: `${API_BASE_URL}/api/metrics/history`,
+    HEALTH: `${API_BASE_URL}/api/metrics/health`,
   },
   ALERTS: {
     LIST: `${API_BASE_URL}/api/alerts`,

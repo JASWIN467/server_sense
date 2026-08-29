@@ -21,9 +21,14 @@ const LoginPage = () => {
 
             message.success('Login successful');
 
-            // Redirect based on role in response
-            if (data.user.role === 'admin') {
-                navigate('/admin');
+            // Redirect based on selected portal and user permissions
+            if (role === 'admin') {
+                if (data.user?.role === 'admin') {
+                    navigate('/admin');
+                } else {
+                    message.info('Logged in with User role. Redirecting to User Dashboard...');
+                    navigate('/user/dashboard');
+                }
             } else {
                 navigate('/user/dashboard');
             }
