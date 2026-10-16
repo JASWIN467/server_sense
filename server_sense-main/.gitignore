@@ -1,7 +1,0 @@
-node_modules
-.env
-.DS_Store
-
-
-# Kubernetes secrets
-k8s/secret.yaml
