@@ -1,0 +1,11 @@
+{
+  "name": "serversense",
+  "version": "1.0.0",
+  "description": "ServerSense fullstack monitoring system",
+  "main": "server/index.js",
+  "scripts": {
+    "build": "cd server && npm install",
+    "start": "cd server && node index.js"
+  },
+  "type": "module"
+}
