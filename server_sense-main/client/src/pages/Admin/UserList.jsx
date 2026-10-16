@@ -13,6 +13,7 @@ import {
     DeleteOutlined,
     ExclamationCircleOutlined
 } from '@ant-design/icons';
+import { API_ENDPOINTS } from '../../config/constants';
 
 const { Option } = Select;
 const { confirm } = Modal;
@@ -41,7 +42,12 @@ const UserList = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const response = await fetch('https://serversense-server.onrender.com/api/users');
+            const token = localStorage.getItem('token');
+            const response = await fetch(API_ENDPOINTS.USERS.LIST, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 setUsers(data);
@@ -88,8 +94,12 @@ const UserList = () => {
             className: 'glass-modal',
             onOk: async () => {
                 try {
-                    const response = await fetch(`https://serversense-server.onrender.com/api/users/${user._id}`, {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`${API_ENDPOINTS.USERS.LIST}/${user._id}`, {
                         method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
                     });
                     if (response.ok) {
                         message.success('User deleted successfully');
@@ -98,6 +108,7 @@ const UserList = () => {
                         message.error('Failed to delete user');
                     }
                 } catch (error) {
+                    console.error('Error deleting user:', error);
                     message.error('Error deleting user');
                 }
             },
@@ -107,9 +118,13 @@ const UserList = () => {
     const handleRoleChange = async (user) => {
         const newRole = user.role === 'admin' ? 'user' : 'admin';
         try {
-            const response = await fetch(`https://serversense-server.onrender.com/api/users/${user._id}`, {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_ENDPOINTS.USERS.LIST}/${user._id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ role: newRole })
             });
             if (response.ok) {
@@ -119,6 +134,7 @@ const UserList = () => {
                 message.error('Failed to update role');
             }
         } catch (error) {
+            console.error('Error updating role:', error);
             message.error('Error updating role');
         }
     };
@@ -126,15 +142,19 @@ const UserList = () => {
     const handleModalOk = async () => {
         try {
             const values = await form.validateFields();
+            const token = localStorage.getItem('token');
             const url = modalMode === 'create'
-                ? 'https://serversense-server.onrender.com/api/auth/register'
-                : `https://serversense-server.onrender.com/api/users/${editingUser._id}`;
+                ? API_ENDPOINTS.AUTH.REGISTER
+                : `${API_ENDPOINTS.USERS.LIST}/${editingUser._id}`;
 
             const method = modalMode === 'create' ? 'POST' : 'PUT';
 
             const response = await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(values)
             });
 

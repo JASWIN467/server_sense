@@ -8,15 +8,14 @@ import DashboardHome from './pages/Admin/DashboardHome';
 
 import ServerList from './pages/Admin/ServerList';
 import Alerts from './pages/Admin/Alerts';
+import AIDiagnostics from './pages/Admin/AIDiagnostics';
 import Settings from './pages/Admin/Settings';
 import UserList from './pages/Admin/UserList';
-import MetricsDashboard from './pages/Admin/MetricsDashboard';
 
 import UserLayout from './components/Layout/UserLayout';
 import UserDashboard from './pages/User/UserDashboard';
-import UserServerList from './pages/User/UserServerList';
+import UserIntegrations from './pages/User/UserIntegrations';
 import UserAlerts from './pages/User/UserAlerts';
-import ServerDetail from './pages/User/ServerDetail';
 
 function App() {
   return (
@@ -32,16 +31,15 @@ function App() {
           <Route index element={<DashboardHome />} />
           <Route path="servers" element={<ServerList />} />
           <Route path="alerts" element={<Alerts />} />
+          <Route path="ai-diagnostics" element={<AIDiagnostics />} />
           <Route path="users" element={<UserList />} />
           <Route path="settings" element={<Settings />} />
-          <Route path="metrics" element={<MetricsDashboard />} />
         </Route>
 
         {/* User Routes */}
         <Route path="/user" element={<UserLayout />}>
           <Route path="dashboard" element={<UserDashboard />} />
-          <Route path="servers" element={<UserServerList />} />
-          <Route path="server/:id" element={<ServerDetail />} />
+          <Route path="integrations" element={<UserIntegrations />} />
           <Route path="alerts" element={<UserAlerts />} />
         </Route>
       </Routes>

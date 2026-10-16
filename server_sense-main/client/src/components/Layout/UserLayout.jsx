@@ -8,7 +8,8 @@ import {
     LogoutOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined,
-    BellOutlined
+    BellOutlined,
+    ApiOutlined
 } from '@ant-design/icons';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -27,9 +28,9 @@ const UserLayout = () => {
             label: <Link to="/user/dashboard">Overview</Link>,
         },
         {
-            key: '/user/servers',
-            icon: <CloudServerOutlined />,
-            label: <Link to="/user/servers">My Servers</Link>,
+            key: '/user/integrations',
+            icon: <ApiOutlined />,
+            label: <Link to="/user/integrations">Integrations</Link>,
         },
         {
             key: '/user/alerts',

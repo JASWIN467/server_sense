@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Input, Modal, Form, Select, message, Tooltip, Badge, Progress, Tabs } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Button, Tag, Tabs, Spin, Alert, Table, Descriptions, Badge } from 'antd';
 import {
-    SearchOutlined,
-    ReloadOutlined,
-    PlusOutlined,
     DesktopOutlined,
-    HeartOutlined,
-    WarningOutlined,
+    ReloadOutlined,
+    AreaChartOutlined,
+    InfoCircleOutlined,
+    WifiOutlined,
     CheckCircleOutlined,
     CloseCircleOutlined,
-    ThunderboltOutlined,
-    DatabaseOutlined,
-    GlobalOutlined
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS } from '../../config/constants';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const GlassPanel = ({ children, className = '' }) => (
     <div className={`relative overflow-hidden rounded-xl border border-white/10 bg-[#0a0a0a]/80 backdrop-blur-xl shadow-xl ${className}`}>
@@ -20,389 +20,462 @@ const GlassPanel = ({ children, className = '' }) => (
     </div>
 );
 
-const MetricBar = ({ label, value, color, unit = '%' }) => (
-    <div className="mb-2">
-        <div className="flex justify-between text-xs mb-1">
-            <span className="text-gray-500">{label}</span>
-            <span className="text-gray-300 font-mono">{value}{unit}</span>
-        </div>
-        <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
-            <div
-                className={`h-full rounded-full transition-all duration-1000 ${color}`}
-                style={{ width: `${value}%` }}
-            />
-        </div>
+const val = (v) => (v !== null && v !== undefined && v !== '') ? v : <span className="text-gray-600 italic">Unavailable</span>;
+
+const TabLoader = ({ text }) => (
+    <div className="flex flex-col items-center justify-center py-14 gap-3">
+        <Spin size="large" />
+        <p className="text-gray-500 text-sm">{text}</p>
     </div>
 );
 
-const initialData = [
-    { key: '1', name: 'AWS-Prod-01', ip: '192.168.1.10', status: 'Online', region: 'us-east-1', cpu: 45, ram: 60, disk: 32, heartbeat: '2ms' },
-    { key: '2', name: 'AWS-Prod-02', ip: '192.168.1.11', status: 'Warning', region: 'us-east-1', cpu: 88, ram: 92, disk: 45, heartbeat: '120ms' },
-    { key: '3', name: 'DB-Cluster-Main', ip: '10.0.0.55', status: 'Online', region: 'eu-west-2', cpu: 23, ram: 45, disk: 89, heartbeat: '5ms' },
-    { key: '4', name: 'Cache-Redis-01', ip: '10.0.0.60', status: 'Offline', region: 'ap-south-1', cpu: 0, ram: 0, disk: 0, heartbeat: '-' },
-    { key: '5', name: 'Worker-Edge-05', ip: '172.16.5.21', status: 'Online', region: 'us-west-1', cpu: 12, ram: 28, disk: 15, heartbeat: '45ms' },
-    { key: '6', name: 'Analytics-Node', ip: '172.16.5.99', status: 'Warning', region: 'us-west-1', cpu: 76, ram: 81, disk: 67, heartbeat: '210ms' },
-];
+const TabError = ({ message, onRetry }) => (
+    <div className="py-8 px-4">
+        <Alert
+            type="error"
+            message="Unable to load information"
+            description={message}
+            showIcon
+            className="rounded-xl border-red-500/20 bg-red-500/5 mb-4"
+            action={
+                onRetry && (
+                    <Button size="small" onClick={onRetry} className="mt-2">
+                        Retry
+                    </Button>
+                )
+            }
+        />
+    </div>
+);
 
-const ServerList = () => {
-    const [servers, setServers] = useState(initialData);
-    const [searchText, setSearchText] = useState('');
-    const [activeTab, setActiveTab] = useState('all'); // Add activeTab state
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [form] = Form.useForm();
+// ─── Tab 1: Host Details ───────────────────────────────────────────────────────
 
-    const stats = {
-        total: servers.length,
-        healthy: servers.filter(s => s.status === 'Online').length,
-        warning: servers.filter(s => s.status === 'Warning').length,
-        critical: servers.filter(s => s.status === 'Offline').length,
-    };
+const HostDetailsTab = ({ hostDetails, loading, error, onRetry }) => {
+    if (loading) return <TabLoader text="Loading host information…" />;
+    if (error)   return <TabError message={error} onRetry={onRetry} />;
+    if (!hostDetails) return null;
 
-    const handleRefresh = () => {
-        setLoading(true);
-        setTimeout(() => {
-            const updatedServers = servers.map(s => {
-                if (s.status === 'Offline') return s;
-                return {
-                    ...s,
-                    cpu: Math.floor(Math.random() * 60) + 10,
-                    ram: Math.floor(Math.random() * 60) + 20,
-                    heartbeat: `${Math.floor(Math.random() * 50) + 1}ms`
-                };
-            });
-            setServers(updatedServers);
-            setLoading(false);
-            message.success('Cluster metrics refreshed');
-        }, 800);
-    };
+    const rows = [
+        { label: 'Hostname',          value: hostDetails.hostname  },
+        { label: 'Operating System',  value: hostDetails.distro ? `${hostDetails.distro} ${hostDetails.release || ''}`.trim() : hostDetails.platform },
+        { label: 'Platform',          value: hostDetails.platform  },
+        { label: 'OS Release',        value: hostDetails.release   },
+        { label: 'Kernel Version',    value: hostDetails.kernel    },
+        { label: 'Architecture',      value: hostDetails.arch      },
+        { label: 'Code Name',         value: hostDetails.codename  },
+    ];
 
-    const handleFixNode = (key) => {
-        message.loading({ content: 'Initiating auto-recovery protocol...', key: 'fix' });
-        setTimeout(() => {
-            setServers(current => current.map(s => {
-                if (s.key === key) {
-                    return { ...s, status: 'Online', cpu: 30, ram: 40, heartbeat: '5ms' };
-                }
-                return s;
-            }));
-            message.success({ content: 'Node recovered successfully', key: 'fix' });
-        }, 1500);
-    };
-
-    const handleAdd = (values) => {
-        const newServer = {
-            key: Date.now().toString(),
-            name: values.name,
-            ip: values.ip,
-            region: values.region,
-            status: 'Online',
-            cpu: Math.floor(Math.random() * 30),
-            ram: Math.floor(Math.random() * 40),
-            disk: 10,
-            heartbeat: '10ms'
-        };
-        setServers([...servers, newServer]);
-        setIsModalOpen(false);
-        form.resetFields();
-        message.success('Node provisioned successfully');
-    };
-
-    const StatusCard = ({ title, count, color, icon }) => (
-        <GlassPanel className="p-5 flex items-center justify-between border-l-4" style={{ borderLeftColor: color }}>
-            <div>
-                <p className="text-gray-400 text-sm font-medium uppercase tracking-wide">{title}</p>
-                <p className="text-3xl font-bold text-white mt-1">{count}</p>
+    return (
+        <div className="p-4 space-y-2">
+            <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">
+                Real host identity from <code className="text-sky-400">si.osInfo()</code>
+            </p>
+            <div className="rounded-xl overflow-hidden border border-white/5">
+                {rows.map(({ label, value }) => (
+                    <div key={label} className="flex border-b border-white/5 last:border-b-0">
+                        <div className="w-44 flex-shrink-0 bg-[#111] px-4 py-3 text-gray-400 text-xs font-semibold uppercase tracking-wider flex items-center">
+                            {label}
+                        </div>
+                        <div className="flex-1 bg-[#050505] px-4 py-3 text-white text-sm font-mono">
+                            {val(value)}
+                        </div>
+                    </div>
+                ))}
             </div>
-            <div className={`p-3 rounded-xl bg-opacity-10 ${color.replace('border-', 'bg-')} ${color.replace('border-', 'text-')}`}>
-                {icon}
-            </div>
-        </GlassPanel>
+        </div>
+    );
+};
+
+// ─── Tab 2: Network ────────────────────────────────────────────────────────────
+
+const NetworkTab = ({ networks, loading, error, onRetry }) => {
+    if (loading) return <TabLoader text="Loading network interfaces…" />;
+    if (error)   return <TabError message={error} onRetry={onRetry} />;
+    if (!networks) return null;
+
+    const columns = [
+        {
+            title: 'Interface',
+            dataIndex: 'iface',
+            key: 'iface',
+            render: (v) => <span className="font-mono font-semibold text-sky-400">{val(v)}</span>,
+        },
+        {
+            title: 'IPv4',
+            dataIndex: 'ip4',
+            key: 'ip4',
+            render: (v) => <span className="font-mono text-white">{val(v)}</span>,
+        },
+        {
+            title: 'IPv6',
+            dataIndex: 'ip6',
+            key: 'ip6',
+            render: (v) => v ? <span className="font-mono text-white text-xs">{v}</span> : <span className="text-gray-600 italic text-xs">Unavailable</span>,
+        },
+        {
+            title: 'MAC',
+            dataIndex: 'mac',
+            key: 'mac',
+            render: (v) => <span className="font-mono text-gray-300 text-xs">{val(v)}</span>,
+        },
+        {
+            title: 'Speed',
+            dataIndex: 'speed',
+            key: 'speed',
+            render: (v) => v != null ? <span className="text-gray-300">{v} Mbps</span> : <span className="text-gray-600 italic">Unavailable</span>,
+        },
+        {
+            title: 'Type',
+            dataIndex: 'type',
+            key: 'type',
+            render: (v) => val(v),
+        },
+        {
+            title: 'Status',
+            dataIndex: 'operstate',
+            key: 'operstate',
+            render: (v, record) => {
+                if (!v) return <span className="text-gray-600 italic">Unavailable</span>;
+                const up = v.toLowerCase() === 'up';
+                if (up) return <Tag color="green" icon={<CheckCircleOutlined />}>Up</Tag>;
+                // If no IP, it's physically disconnected — more user-friendly label
+                const hasIp = record.ip4 && record.ip4.trim() !== '';
+                return hasIp
+                    ? <Tag color="orange" icon={<CloseCircleOutlined />}>Down</Tag>
+                    : <Tag color="default" icon={<CloseCircleOutlined />} className="text-gray-400">Not Connected</Tag>;
+            },
+        },
+        {
+            title: 'Internal',
+            dataIndex: 'internal',
+            key: 'internal',
+            render: (v) => v === null ? <span className="text-gray-600 italic">Unavailable</span>
+                         : v ? <Tag>Internal</Tag> : <Tag color="blue">External</Tag>,
+        },
+    ];
+
+    // Filter out loopback (127.x.x.x) — it's a virtual software interface, not a real NIC
+    const displayNetworks = networks.filter(
+        (n) => !(n.ip4 && n.ip4.startsWith('127.')) && !(n.iface && n.iface.toLowerCase().includes('loopback'))
     );
 
     return (
-        <div className="space-y-8 pb-10">
+        <div className="p-4 space-y-3">
+            <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">
+                Real network interfaces from <code className="text-sky-400">si.networkInterfaces()</code>
+            </p>
+            {displayNetworks.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">No network interfaces detected.</div>
+            ) : (
+                <>
+                    <div className="overflow-x-auto rounded-xl border border-white/5">
+                        <Table
+                            dataSource={displayNetworks.map((n, i) => ({ ...n, key: i }))}
+                            columns={columns}
+                            pagination={false}
+                            size="small"
+                            className="custom-dark-table"
+                            style={{ background: 'transparent' }}
+                        />
+                    </div>
+                    <div className="flex items-center gap-6 pt-2 text-xs text-gray-600">
+                        <span><Tag color="green" className="mr-1">Up</Tag> Active connection with assigned IP</span>
+                        <span><Tag color="default" className="mr-1">Not Connected</Tag> Adapter present but no cable / session active</span>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
+
+// ─── Tab 3: System ─────────────────────────────────────────────────────────────
+
+const SystemTab = ({ system, loading, error, onRetry }) => {
+    if (loading) return <TabLoader text="Loading system information…" />;
+    if (error)   return <TabError message={error} onRetry={onRetry} />;
+    if (!system) return null;
+
+    const rows = [
+        { label: 'Manufacturer',  value: system.manufacturer },
+        { label: 'Model',         value: system.model        },
+        { label: 'Version',       value: system.version      },
+        { label: 'Virtual Machine', value: system.virtual !== null ? (system.virtual ? 'Yes' : 'No') : null },
+    ];
+
+    return (
+        <div className="p-4 space-y-2">
+            <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">
+                Real system hardware from <code className="text-sky-400">si.system()</code>
+            </p>
+            <div className="rounded-xl overflow-hidden border border-white/5">
+                {rows.map(({ label, value }) => (
+                    <div key={label} className="flex border-b border-white/5 last:border-b-0">
+                        <div className="w-44 flex-shrink-0 bg-[#111] px-4 py-3 text-gray-400 text-xs font-semibold uppercase tracking-wider flex items-center">
+                            {label}
+                        </div>
+                        <div className="flex-1 bg-[#050505] px-4 py-3 text-white text-sm font-mono">
+                            {val(value)}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <p className="text-gray-600 text-xs pt-1">
+                Note: Serial number and UUID are intentionally not exposed.
+            </p>
+        </div>
+    );
+};
+
+// ─── Tab 4: Telemetry ──────────────────────────────────────────────────────────
+
+const TelemetryTab = ({ telemetry, loading, error, onRetry }) => {
+    if (loading) return <TabLoader text="Loading telemetry information…" />;
+    if (error)   return <TabError message={error} onRetry={onRetry} />;
+    if (!telemetry) return null;
+
+    const fmt = (iso) => iso ? new Date(iso).toLocaleString() : null;
+    const fmtDuration = (a, b) => {
+        if (!a || !b) return null;
+        const diffMs = new Date(b) - new Date(a);
+        const diffH  = Math.floor(diffMs / 3600000);
+        const diffM  = Math.floor((diffMs % 3600000) / 60000);
+        return `${diffH}h ${diffM}m`;
+    };
+
+    const latest = telemetry.latestSnapshot;
+    const oldest = telemetry.oldestSnapshot;
+
+    const rows = [
+        { label: 'Telemetry Status',           value: latest ? 'Active' : 'No snapshots yet' },
+        { label: 'DB Connected',               value: telemetry.dbConnected ? 'Yes' : 'No' },
+        { label: 'Snapshot Interval',          value: `${telemetry.collectionIntervalSeconds}s (backend daemon)` },
+        { label: 'Live Polling Interval',      value: `${telemetry.pollingIntervalSeconds}s (frontend)` },
+        { label: 'Total Snapshots in DB',      value: telemetry.snapshotCount != null ? telemetry.snapshotCount.toLocaleString() : null },
+        { label: 'Latest Snapshot Time',       value: fmt(latest?.timestamp) },
+        { label: 'Latest CPU Load',            value: latest?.cpuLoad       != null ? `${latest.cpuLoad.toFixed(1)}%`       : null },
+        { label: 'Latest Memory Used',         value: latest?.memUsedPercent != null ? `${latest.memUsedPercent.toFixed(1)}%` : null },
+        { label: 'Latest Disk Used',           value: latest?.diskUsedPercent != null ? `${latest.diskUsedPercent.toFixed(1)}%` : null },
+        { label: 'Oldest Snapshot Time',       value: fmt(oldest?.timestamp) },
+        { label: 'History Span',               value: fmtDuration(oldest?.timestamp, latest?.timestamp) },
+    ];
+
+    return (
+        <div className="p-4 space-y-2">
+            <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">
+                Real telemetry state from MongoDB snapshot collection
+            </p>
+            <div className="rounded-xl overflow-hidden border border-white/5">
+                {rows.map(({ label, value }) => (
+                    <div key={label} className="flex border-b border-white/5 last:border-b-0">
+                        <div className="w-52 flex-shrink-0 bg-[#111] px-4 py-3 text-gray-400 text-xs font-semibold uppercase tracking-wider flex items-center">
+                            {label}
+                        </div>
+                        <div className="flex-1 bg-[#050505] px-4 py-3 text-sm font-mono">
+                            {label === 'Telemetry Status' ? (
+                                value === 'Active'
+                                    ? <Badge status="processing" text={<span className="text-emerald-400">{value}</span>} />
+                                    : <span className="text-yellow-500">{value}</span>
+                            ) : label === 'DB Connected' ? (
+                                telemetry.dbConnected
+                                    ? <Tag color="green">Connected</Tag>
+                                    : <Tag color="orange">Offline (memory fallback)</Tag>
+                            ) : (
+                                <span className="text-white">{val(value)}</span>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// ─── Main Component ────────────────────────────────────────────────────────────
+
+const ServerList = () => {
+    const navigate = useNavigate();
+
+    // Live connection check (used for ONLINE badge)
+    const [liveMetrics,    setLiveMetrics]    = useState(null);
+    const [liveLoading,    setLiveLoading]    = useState(true);
+
+    // Host info (shared by Tab 1, 2, 3)
+    const [hostInfo,       setHostInfo]       = useState(null);
+    const [hostLoading,    setHostLoading]    = useState(true);
+    const [hostError,      setHostError]      = useState(null);
+
+    // Telemetry (Tab 4)
+    const [telemetry,      setTelemetry]      = useState(null);
+    const [telemetryLoading, setTelemetryLoading] = useState(true);
+    const [telemetryError,   setTelemetryError]   = useState(null);
+
+    const fetchLive = useCallback(async () => {
+        try {
+            setLiveLoading(true);
+            const res = await fetch(API_ENDPOINTS.METRICS.CURRENT);
+            if (res.ok) setLiveMetrics(await res.json());
+        } catch (_) { /* silent */ }
+        finally { setLiveLoading(false); }
+    }, []);
+
+    const fetchHostInfo = useCallback(async () => {
+        setHostLoading(true);
+        setHostError(null);
+        try {
+            const res = await fetch(API_ENDPOINTS.HOST.INFO);
+            if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`);
+            setHostInfo(await res.json());
+        } catch (err) {
+            setHostError(err.message);
+        } finally {
+            setHostLoading(false);
+        }
+    }, []);
+
+    const fetchTelemetry = useCallback(async () => {
+        setTelemetryLoading(true);
+        setTelemetryError(null);
+        try {
+            const res = await fetch(API_ENDPOINTS.HOST.TELEMETRY);
+            if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`);
+            setTelemetry(await res.json());
+        } catch (err) {
+            setTelemetryError(err.message);
+        } finally {
+            setTelemetryLoading(false);
+        }
+    }, []);
+
+    // On mount: load everything
+    useEffect(() => {
+        fetchLive();
+        fetchHostInfo();
+        fetchTelemetry();
+
+        // Keep live status pinging for ONLINE badge only
+        const liveInterval = setInterval(fetchLive, 5000);
+        return () => clearInterval(liveInterval);
+    }, [fetchLive, fetchHostInfo, fetchTelemetry]);
+
+    const handleRefresh = () => {
+        fetchLive();
+        fetchHostInfo();
+        fetchTelemetry();
+    };
+
+    const isOnline = liveMetrics !== null;
+
+    const tabItems = [
+        {
+            key: '1',
+            label: 'Host Details',
+            children: (
+                <HostDetailsTab
+                    hostDetails={hostInfo?.hostDetails}
+                    loading={hostLoading}
+                    error={hostError}
+                    onRetry={fetchHostInfo}
+                />
+            ),
+        },
+        {
+            key: '2',
+            label: 'Network',
+            children: (
+                <NetworkTab
+                    networks={hostInfo?.networks}
+                    loading={hostLoading}
+                    error={hostError}
+                    onRetry={fetchHostInfo}
+                />
+            ),
+        },
+        {
+            key: '3',
+            label: 'System',
+            children: (
+                <SystemTab
+                    system={hostInfo?.system}
+                    loading={hostLoading}
+                    error={hostError}
+                    onRetry={fetchHostInfo}
+                />
+            ),
+        },
+        {
+            key: '4',
+            label: 'Telemetry',
+            children: (
+                <TelemetryTab
+                    telemetry={telemetry}
+                    loading={telemetryLoading}
+                    error={telemetryError}
+                    onRetry={fetchTelemetry}
+                />
+            ),
+        },
+    ];
+
+    return (
+        <div className="space-y-6 pb-10">
             {/* Header */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                         <DesktopOutlined className="text-sky-500" />
-                        Cluster Health
+                        Host Server Node Inspection
                     </h2>
-                    <p className="text-gray-500 text-sm mt-1">Real-time infrastructure monitoring</p>
+                    <p className="text-gray-500 text-sm mt-1">
+                        Detailed inspection and metadata of the monitored host.
+                    </p>
                 </div>
                 <div className="flex gap-3">
-                    <Button icon={<ReloadOutlined spin={loading} />} onClick={handleRefresh} className="bg-[#111] border-white/10 text-gray-300 hover:text-white">
-                        Refresh Metrics
+                    <Button
+                        icon={<ReloadOutlined spin={hostLoading || telemetryLoading} />}
+                        onClick={handleRefresh}
+                        className="bg-[#111] border-white/10 text-gray-300 hover:text-white"
+                    >
+                        Refresh Node
                     </Button>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)} className="bg-sky-600 border-none shadow-lg shadow-sky-900/20">
-                        Provision Node
+                    <Button
+                        type="primary"
+                        icon={<AreaChartOutlined />}
+                        onClick={() => navigate('/admin')}
+                        className="bg-sky-600 border-none shadow-lg shadow-sky-900/20"
+                    >
+                        Live Stream View
                     </Button>
                 </div>
             </div>
 
-            {/* Summary Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatusCard title="Total Nodes" count={stats.total} color="border-sky-500" icon={<DatabaseOutlined className="text-2xl" />} />
-                <StatusCard title="Online" count={stats.healthy} color="border-emerald-500" icon={<CheckCircleOutlined className="text-2xl" />} />
-                <StatusCard title="Warnings" count={stats.warning} color="border-amber-500" icon={<WarningOutlined className="text-2xl" />} />
-                <StatusCard title="Critical" count={stats.critical} color="border-red-500" icon={<CloseCircleOutlined className="text-2xl" />} />
+            {/* Host Identity */}
+            <div className="flex items-center gap-4 py-1">
+                <h3 className="text-xl font-bold text-white font-mono">Primary Host Node (Local)</h3>
+                {liveLoading
+                    ? <Tag className="border-none">Connecting…</Tag>
+                    : isOnline
+                        ? <Tag color="green" className="border-none font-semibold px-2 py-0.5">ONLINE</Tag>
+                        : <Tag color="red"   className="border-none font-semibold px-2 py-0.5">OFFLINE</Tag>
+                }
             </div>
 
-            {/* Middle Section: Chart & Attention List */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Health Distribution */}
-                <GlassPanel className="p-6 col-span-1">
-                    <h3 className="text-lg font-semibold text-white mb-6">Health Distribution</h3>
-                    <div className="space-y-6">
-                        <div>
-                            <div className="flex justify-between text-gray-400 text-sm mb-1">
-                                <span>Healthy ({Math.round(stats.healthy / stats.total * 100)}%)</span>
-                                <span className="text-emerald-500">{stats.healthy}</span>
-                            </div>
-                            <Progress percent={Math.round(stats.healthy / stats.total * 100)} showInfo={false} strokeColor="#10b981" trailColor="#333" />
-                        </div>
-                        <div>
-                            <div className="flex justify-between text-gray-400 text-sm mb-1">
-                                <span>Warning ({Math.round(stats.warning / stats.total * 100)}%)</span>
-                                <span className="text-amber-500">{stats.warning}</span>
-                            </div>
-                            <Progress percent={Math.round(stats.warning / stats.total * 100)} showInfo={false} strokeColor="#f59e0b" trailColor="#333" />
-                        </div>
-                        <div>
-                            <div className="flex justify-between text-gray-400 text-sm mb-1">
-                                <span>Critical ({Math.round(stats.critical / stats.total * 100)}%)</span>
-                                <span className="text-red-500">{stats.critical}</span>
-                            </div>
-                            <Progress percent={Math.round(stats.critical / stats.total * 100)} showInfo={false} strokeColor="#ef4444" trailColor="#333" />
-                        </div>
-                    </div>
-                </GlassPanel>
-
-                {/* Nodes Requiring Attention */}
-                <GlassPanel className="p-6 col-span-1 lg:col-span-2">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <ThunderboltOutlined className="text-amber-500" />
-                        Nodes Requiring Attention
-                    </h3>
-                    <div className="space-y-3">
-                        {stats.warning === 0 && stats.critical === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-40 text-gray-500">
-                                <CheckCircleOutlined className="text-4xl text-emerald-500/50 mb-3" />
-                                <p>All operations normal.</p>
-                            </div>
-                        ) : (
-                            servers.filter(s => s.status !== 'Online').map(node => (
-                                <div key={node.key} className="flex items-center justify-between bg-white/5 p-4 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-2 h-2 rounded-full ${node.status === 'Offline' ? 'bg-red-500 shadow-[0_0_8px_red]' : 'bg-amber-500 shadow-[0_0_8px_orange]'}`} />
-                                        <div>
-                                            <p className="font-semibold text-gray-200">{node.name}</p>
-                                            <p className="text-xs text-gray-500 font-mono">{node.ip} • <span className={node.status === 'Offline' ? 'text-red-400' : 'text-amber-400'}>{node.status}</span></p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-4 text-xs text-gray-400 font-mono hidden sm:flex">
-                                        <span>CPU: {node.cpu}%</span>
-                                        <span>RAM: {node.ram}%</span>
-                                    </div>
-                                    <Button size="small" type="primary" danger={node.status === 'Offline'} onClick={() => handleFixNode(node.key)}>
-                                        {node.status === 'Offline' ? 'Reboot' : 'Optimize'}
-                                    </Button>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </GlassPanel>
+            {/* Honest Architecture Note */}
+            <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4 flex items-start gap-3 text-xs text-sky-300">
+                <InfoCircleOutlined className="text-base text-sky-400 mt-0.5" />
+                <div className="leading-relaxed">
+                    <span className="font-semibold text-white">Single-Host Telemetry Model: </span>
+                    ServerSense is currently scoped to the active host server instance. All values below are retrieved in real-time from the host kernel via <code className="text-sky-400">systeminformation</code>.
+                </div>
             </div>
 
-            {/* Tabs & Search */}
-            <Tabs
-                activeKey={activeTab}
-                onChange={setActiveTab}
-                className="custom-tabs"
-                items={[
-                    {
-                        key: 'all',
-                        label: 'All Nodes',
-                        children: (
-                            <>
-                                <Input
-                                    placeholder="Search nodes by name or IP..."
-                                    prefix={<SearchOutlined className="text-gray-600" />}
-                                    className="max-w-md bg-[#0a0a0a] border-white/10 text-white placeholder:text-gray-600 mb-6"
-                                    value={searchText}
-                                    onChange={e => setSearchText(e.target.value)}
-                                />
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                    {servers.filter(s => s.name.toLowerCase().includes(searchText.toLowerCase()) || s.ip.includes(searchText)).map(server => (
-                                        <GlassPanel key={server.key} className="p-5 hover:border-white/20 transition-all duration-300">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-lg ${server.status === 'Online' ? 'bg-emerald-500/10 text-emerald-500' : server.status === 'Warning' ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                        <GlobalOutlined />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-bold text-gray-200">{server.name}</h4>
-                                                        <p className="text-xs text-gray-500 font-mono">{server.ip}</p>
-                                                    </div>
-                                                </div>
-                                                <Tooltip title={`Status: ${server.status}`}>
-                                                    <div className={`w-2 h-2 rounded-full ${server.status === 'Online' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : server.status === 'Warning' ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`} />
-                                                </Tooltip>
-                                            </div>
-
-                                            <div className="space-y-4 mb-4">
-                                                <MetricBar label="CPU Usage" value={server.cpu} color={server.cpu > 80 ? 'bg-red-500' : server.cpu > 60 ? 'bg-amber-500' : 'bg-sky-500'} />
-                                                <MetricBar label="Memory" value={server.ram} color={server.ram > 80 ? 'bg-red-500' : server.ram > 60 ? 'bg-purple-500' : 'bg-blue-500'} />
-                                                <MetricBar label="Disk Space" value={server.disk} color="bg-gray-500" />
-                                            </div>
-
-                                            <div className="flex justify-between items-center text-xs text-gray-500 pt-4 border-t border-white/5">
-                                                <span className="flex items-center gap-1"><HeartOutlined /> {server.heartbeat}</span>
-                                                <span>{server.region}</span>
-                                            </div>
-                                        </GlassPanel>
-                                    ))}
-                                </div>
-                            </>
-                        )
-                    },
-                    {
-                        key: 'online',
-                        label: <span className="text-emerald-500">Healthy</span>,
-                        children: (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {servers.filter(s => s.status === 'Online' && (s.name.toLowerCase().includes(searchText.toLowerCase()) || s.ip.includes(searchText))).map(server => (
-                                    <GlassPanel key={server.key} className="p-5 hover:border-white/20 transition-all duration-300">
-                                        {/* Duplicate Card logic for simplicity, normally would extract to component */}
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
-                                                    <GlobalOutlined />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-gray-200">{server.name}</h4>
-                                                    <p className="text-xs text-gray-500 font-mono">{server.ip}</p>
-                                                </div>
-                                            </div>
-                                            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-                                        </div>
-                                        <div className="space-y-4 mb-4">
-                                            <MetricBar label="CPU Usage" value={server.cpu} color={server.cpu > 80 ? 'bg-red-500' : server.cpu > 60 ? 'bg-amber-500' : 'bg-sky-500'} />
-                                            <MetricBar label="Memory" value={server.ram} color={server.ram > 80 ? 'bg-red-500' : server.ram > 60 ? 'bg-purple-500' : 'bg-blue-500'} />
-                                            <MetricBar label="Disk Space" value={server.disk} color="bg-gray-500" />
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs text-gray-500 pt-4 border-t border-white/5">
-                                            <span className="flex items-center gap-1"><HeartOutlined /> {server.heartbeat}</span>
-                                            <span>{server.region}</span>
-                                        </div>
-                                    </GlassPanel>
-                                ))}
-                            </div>
-                        )
-                    },
-                    {
-                        key: 'warning',
-                        label: <span className="text-amber-500">Warning</span>,
-                        children: (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {servers.filter(s => s.status === 'Warning' && (s.name.toLowerCase().includes(searchText.toLowerCase()) || s.ip.includes(searchText))).map(server => (
-                                    <GlassPanel key={server.key} className="p-5 hover:border-white/20 transition-all duration-300">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
-                                                    <GlobalOutlined />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-gray-200">{server.name}</h4>
-                                                    <p className="text-xs text-gray-500 font-mono">{server.ip}</p>
-                                                </div>
-                                            </div>
-                                            <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_#f59e0b]" />
-                                        </div>
-                                        <div className="space-y-4 mb-4">
-                                            <MetricBar label="CPU Usage" value={server.cpu} color={server.cpu > 80 ? 'bg-red-500' : server.cpu > 60 ? 'bg-amber-500' : 'bg-sky-500'} />
-                                            <MetricBar label="Memory" value={server.ram} color={server.ram > 80 ? 'bg-red-500' : server.ram > 60 ? 'bg-purple-500' : 'bg-blue-500'} />
-                                            <MetricBar label="Disk Space" value={server.disk} color="bg-gray-500" />
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs text-gray-500 pt-4 border-t border-white/5">
-                                            <span className="flex items-center gap-1"><HeartOutlined /> {server.heartbeat}</span>
-                                            <span>{server.region}</span>
-                                        </div>
-                                    </GlassPanel>
-                                ))}
-                            </div>
-                        )
-                    },
-                    {
-                        key: 'critical',
-                        label: <span className="text-red-500">Critical</span>,
-                        children: (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {servers.filter(s => s.status === 'Offline' && (s.name.toLowerCase().includes(searchText.toLowerCase()) || s.ip.includes(searchText))).map(server => (
-                                    <GlassPanel key={server.key} className="p-5 hover:border-white/20 transition-all duration-300">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-lg bg-red-500/10 text-red-500">
-                                                    <GlobalOutlined />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-gray-200">{server.name}</h4>
-                                                    <p className="text-xs text-gray-500 font-mono">{server.ip}</p>
-                                                </div>
-                                            </div>
-                                            <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]" />
-                                        </div>
-                                        <div className="space-y-4 mb-4">
-                                            <MetricBar label="CPU Usage" value={server.cpu} color={server.cpu > 80 ? 'bg-red-500' : server.cpu > 60 ? 'bg-amber-500' : 'bg-sky-500'} />
-                                            <MetricBar label="Memory" value={server.ram} color={server.ram > 80 ? 'bg-red-500' : server.ram > 60 ? 'bg-purple-500' : 'bg-blue-500'} />
-                                            <MetricBar label="Disk Space" value={server.disk} color="bg-gray-500" />
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs text-gray-500 pt-4 border-t border-white/5">
-                                            <span className="flex items-center gap-1"><HeartOutlined /> {server.heartbeat}</span>
-                                            <span>{server.region}</span>
-                                        </div>
-                                    </GlassPanel>
-                                ))}
-                            </div>
-                        )
-                    }
-                ]}
-            />
-
-            {/* Modal */}
-            <Modal
-                title={<span className="text-white">Provision New Node</span>}
-                open={isModalOpen}
-                onCancel={() => setIsModalOpen(false)}
-                footer={null}
-                className="custom-modal"
-                centered
-            >
-                <Form form={form} layout="vertical" onFinish={handleAdd}>
-                    <Form.Item name="name" label={<span className="text-gray-400">Node Name</span>} rules={[{ required: true }]}>
-                        <Input className="bg-[#111] border-gray-700 text-white" placeholder="e.g. Worker-01" />
-                    </Form.Item>
-                    <Form.Item name="ip" label={<span className="text-gray-400">IP Address</span>} rules={[{ required: true }]}>
-                        <Input className="bg-[#111] border-gray-700 text-white" />
-                    </Form.Item>
-                    <Form.Item name="region" label={<span className="text-gray-400">Region</span>} rules={[{ required: true }]}>
-                        <Select
-                            className="bg-[#111]"
-                            dropdownStyle={{ backgroundColor: '#111', border: '1px solid #333' }}
-                            options={[
-                                { value: 'us-east-1', label: 'US East' },
-                                { value: 'eu-west-1', label: 'EU West' },
-                                { value: 'ap-south-1', label: 'Asia Pacific' },
-                            ]}
-                        />
-                    </Form.Item>
-                    <div className="flex justify-end gap-2 mt-4">
-                        <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                        <Button type="primary" htmlType="submit" className="bg-sky-600">Provision</Button>
-                    </div>
-                </Form>
-            </Modal>
+            {/* Tabbed Interface */}
+            <GlassPanel className="border-t-2 border-t-sky-500">
+                <Tabs
+                    defaultActiveKey="1"
+                    items={tabItems}
+                    className="custom-tabs px-2 [&_.ant-tabs-nav]:mb-0 [&_.ant-tabs-tab]:text-gray-400 [&_.ant-tabs-tab-active_.ant-tabs-tab-btn]:text-sky-400 [&_.ant-tabs-ink-bar]:bg-sky-500 [&_.ant-tabs-nav]:pt-2"
+                />
+            </GlassPanel>
         </div>
     );
 };

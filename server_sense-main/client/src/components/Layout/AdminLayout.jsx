@@ -11,6 +11,7 @@ import {
     MenuUnfoldOutlined,
     BellOutlined,
     AreaChartOutlined,
+    RobotOutlined,
 } from '@ant-design/icons';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -35,14 +36,14 @@ const AdminLayout = () => {
             label: 'Servers',
         },
         {
-            key: '/admin/metrics',
-            icon: <AreaChartOutlined />,
-            label: 'Metrics',
-        },
-        {
             key: '/admin/alerts',
             icon: <AlertOutlined />,
             label: 'Alerts',
+        },
+        {
+            key: '/admin/ai-diagnostics',
+            icon: <RobotOutlined />,
+            label: 'AI Diagnostics',
         },
         {
             key: '/admin/users',

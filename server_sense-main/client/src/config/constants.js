@@ -22,11 +22,33 @@ export const API_ENDPOINTS = {
   },
   ALERTS: {
     LIST: `${API_BASE_URL}/api/alerts`,
-    CREATE: `${API_BASE_URL}/api/alerts`,
-    UPDATE: (id) => `${API_BASE_URL}/api/alerts/${id}`,
+    RESOLVE: (id) => `${API_BASE_URL}/api/alerts/${id}/resolve`,
+    RESOLVE_ALL: `${API_BASE_URL}/api/alerts/resolve-all`,
+    ACKNOWLEDGE: (id) => `${API_BASE_URL}/api/alerts/${id}/acknowledge`,
+    UNACKNOWLEDGE: (id) => `${API_BASE_URL}/api/alerts/${id}/unacknowledge`,
   },
   USERS: {
     LIST: `${API_BASE_URL}/api/users`,
     PROFILE: `${API_BASE_URL}/api/users/profile`,
+  },
+  THRESHOLDS: `${API_BASE_URL}/api/thresholds`,
+  HOST: {
+    INFO: `${API_BASE_URL}/api/host/info`,
+    TELEMETRY: `${API_BASE_URL}/api/host/telemetry`,
+  },
+  RULES: {
+    LIST: `${API_BASE_URL}/api/rules`,
+    CREATE: `${API_BASE_URL}/api/rules`,
+    UPDATE: (id) => `${API_BASE_URL}/api/rules/${id}`,
+    DELETE: (id) => `${API_BASE_URL}/api/rules/${id}`,
+    LOGS: `${API_BASE_URL}/api/rules/logs`,
+  },
+  DIAGNOSES: {
+    LIST: `${API_BASE_URL}/api/diagnoses`,
+    GENERATE: (alertId) => `${API_BASE_URL}/api/diagnoses/generate/${alertId}`,
+    APPROVE: (id) => `${API_BASE_URL}/api/diagnoses/${id}/approve`,
+    REJECT: (id) => `${API_BASE_URL}/api/diagnoses/${id}/reject`,
+    OUTCOME: (id) => `${API_BASE_URL}/api/diagnoses/${id}/outcome`,
+    ACCURACY: `${API_BASE_URL}/api/diagnoses/accuracy`,
   }
 };
